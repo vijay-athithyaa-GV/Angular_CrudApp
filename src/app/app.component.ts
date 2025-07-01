@@ -15,6 +15,8 @@ export class AppComponent {
   employeeForm: FormGroup = new FormGroup({});
   employeeObj:EmployeeModel = new EmployeeModel();
   employeeList: EmployeeModel[] = [];
+  editIndex: number | null = null;
+  isEditMode: boolean = false;
   constructor(){
     this.createForm();
     const oldData = localStorage.getItem("Empdata");
@@ -27,7 +29,7 @@ export class AppComponent {
 
   createForm(){
     this.employeeForm = new FormGroup({
-      empid: new FormControl(this.employeeObj.empId,[Validators.required]),
+      empId: new FormControl(this.employeeObj.empId,[Validators.required]),
       name: new FormControl(this.employeeObj.name,[Validators.required]),
       city: new FormControl(this.employeeObj.city,[Validators.required]),
       address: new FormControl(this.employeeObj.address,[Validators.required]),
@@ -39,41 +41,41 @@ export class AppComponent {
   }
 
   onSave(){
-    debugger;
-    if(this.employeeForm.invalid){
+    if (this.employeeForm.invalid) {
       this.employeeForm.markAllAsTouched();
       return;
     }
-    const oldData = localStorage.getItem("Empdata");
-    if(oldData!=null){
-      const parseData = JSON.parse(oldData);
-      this.employeeForm.controls['empid'].setValue(parseData.length+1);
-      this.employeeList.unshift( this.employeeForm.value);
-    }else{
-       this.employeeList.unshift(this.employeeForm.value);
-    }
-    localStorage.setItem("Empdata",JSON.stringify(this.employeeList));
-    this.employeeObj = new EmployeeModel();
-    this.createForm();
+    this.employeeForm.controls['empId'].setValue(this.employeeList.length ? Math.max(...this.employeeList.map(e => e.empId)) + 1 : 1);
+    this.employeeList.unshift(this.employeeForm.value);
+    localStorage.setItem("Empdata", JSON.stringify(this.employeeList));
+    this.onReset();
   }
 
-  onEdit(item:EmployeeModel){
-    this.employeeObj  = item;
-    this.createForm();
+  onEdit(item: EmployeeModel) {
+    this.editIndex = this.employeeList.findIndex(emp => emp.empId === item.empId);
+    this.employeeForm.patchValue(item);
+    this.isEditMode = true;
   }
   onUpdate(){
-    const record = this.employeeList.find(m => m.empId == this.employeeForm.controls['empid'].value)
-    if(record!=undefined){
-      record.address = this.employeeForm.controls['address'].value;
-      record.name = this.employeeForm.controls['name'].value;
-      record.city = this.employeeForm.controls['city'].value;
-      record.contactNo = this.employeeForm.controls['contactNo'].value;
-      record.state = this.employeeForm.controls['state'].value;
-      record.emailId = this.employeeForm.controls['emailId'].value;
-      record.pinCode = this.employeeForm.controls['pinCode'].value;
+    if (this.editIndex !== null && this.editIndex > -1) {
+      this.employeeList[this.editIndex] = this.employeeForm.value;
+      localStorage.setItem("Empdata", JSON.stringify(this.employeeList));
+      this.onReset();
     }
-    localStorage.setItem("Empdata",JSON.stringify(this.employeeList));
+  }
+
+  onReset() {
     this.employeeObj = new EmployeeModel();
     this.createForm();
+    this.isEditMode = false;
+    this.editIndex = null;
+  }
+  onDelete(id:number){
+    const isDelete = confirm("Are you sure want to delete",this.employeeForm.);
+    if(isDelete){
+      const index = this.employeeList.findIndex(m => m.empId == id);
+      this.employeeList.splice(index,1);
+      localStorage.setItem("Empdata",JSON.stringify(this.employeeList));
+    }
   }
 }
